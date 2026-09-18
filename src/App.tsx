@@ -8,6 +8,7 @@ const EXAMPLES = ["channels", "brief", "audience", "settings"];
 const FAMILIES = getCandidateCountsByProvider();
 const TOTAL_ICONS = sumCounts(FAMILIES);
 const REPO_URL = "https://github.com/sandra-arato/icon-matcher-ui";
+const JEV_BLOG_URL = "https://typesafe.ai/blog/introducing-system-one-models-and-jev";
 
 interface HistoryEntry {
   id: number;
@@ -263,8 +264,12 @@ export default function App() {
         <h1>Choosing icons for UI that doesn't exist yet.</h1>
         <p className="lede">
           Generative interfaces can create labels at runtime, so you can't always maintain a hand-written icon
-          mapping. This experiment uses Jav to pick a fitting icon from a real, constrained set of available
-          icons — rather than inventing an icon name.
+          mapping. This experiment uses{" "}
+          <a href={JEV_BLOG_URL} target="_blank" rel="noreferrer">
+            Jav
+          </a>{" "}
+          to pick a fitting icon from a real, constrained set of available icons — rather than inventing an icon
+          name.
         </p>
         <p className="lede lede--secondary">
           Change the size of the icon set and see how the available choices affect response time.
@@ -396,7 +401,11 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          Icon selection by Jav · {TOTAL_ICONS.toLocaleString()} icons across {configLabel(FAMILIES)}
+          Icon selection by{" "}
+          <a href={JEV_BLOG_URL} target="_blank" rel="noreferrer">
+            Jav
+          </a>{" "}
+          · {TOTAL_ICONS.toLocaleString()} icons across {configLabel(FAMILIES)}
         </p>
         <p className="footer__links">
           <a href={REPO_URL} target="_blank" rel="noreferrer">
