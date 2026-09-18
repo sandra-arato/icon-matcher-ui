@@ -15,6 +15,8 @@ export interface RenderOptions {
 export interface IconProvider {
   /** Short unique key, e.g. "hugeicons", "lucide". Used as a prefix so icon names never collide across providers. */
   id: string;
+  /** Display name for the UI, e.g. "Hugeicons". */
+  label: string;
   listIcons(): IconOption[];
   renderElement(name: string, opts: RenderOptions): ReactElement;
 }

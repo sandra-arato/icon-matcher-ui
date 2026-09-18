@@ -22,6 +22,8 @@ export interface MatchResult {
   candidateCount: number;
   families: FamilyCount[];
   tieBroken: boolean;
+  /** True if this request ran the one-time size calibration, so its duration includes that warm-up. */
+  calibrated: boolean;
 }
 
 export type Logger = (message: string) => void;
@@ -160,10 +162,11 @@ async function runBatch(client: TypeSafeClient, groups: QualifiedIcon[][], title
   }
 }
 
-async function shardedFanOut(apiKey: string, title: string, log: Logger): Promise<Candidate[]> {
+async function shardedFanOut(apiKey: string, title: string, families: FamilyCount[], log: Logger): Promise<{ candidates: Candidate[]; calibrated: boolean }> {
   const client = makeClient(apiKey);
-  const icons = getAllCandidates();
+  const icons = getAllCandidates(families.map((f) => f.id));
 
+  const calibrated = maxOptionsPerQuestion === null;
   await calibrate(client, icons, title, log);
 
   const groupSize = Math.min(CHOICE_OPTION_CAP, maxOptionsPerQuestion ?? CHOICE_OPTION_CAP);
@@ -171,12 +174,12 @@ async function shardedFanOut(apiKey: string, title: string, log: Logger): Promis
   const groupsPerCall = maxOptionsPerCall ? Math.max(1, Math.floor(maxOptionsPerCall / groupSize)) : groups.length;
   const calls = chunk(groups, groupsPerCall);
 
-  log(`Sharding ${icons.length} icons (Hugeicons + Lucide) into ${groups.length} Choice questions across ${calls.length} call(s)...`);
+  log(`Sharding ${icons.length} icons (${families.map((f) => f.label).join(" + ")}) into ${groups.length} Choice questions across ${calls.length} call(s)...`);
 
   const results = await Promise.all(calls.map((call) => runBatch(client, call, title, log)));
   const candidates = results.flat();
   candidates.sort((a, b) => b.confidence - a.confidence);
-  return candidates;
+  return { candidates, calibrated };
 }
 
 async function tieBreak(apiKey: string, title: string, a: Candidate, b: Candidate, log: Logger): Promise<Candidate> {
@@ -195,15 +198,17 @@ async function tieBreak(apiKey: string, title: string, a: Candidate, b: Candidat
   return { ...pick, confidence: response.answers.winner.confidence };
 }
 
-export async function matchIcon(apiKey: string, title: string, log: Logger = () => {}): Promise<MatchResult> {
-  const candidates = await shardedFanOut(apiKey, title, log);
-  const families = getCandidateCountsByProvider();
+/** `familyIds` restricts the choice to those icon families; omitted means every registered family. */
+export async function matchIcon(apiKey: string, title: string, log: Logger = () => {}, familyIds?: readonly string[]): Promise<MatchResult> {
+  const families = getCandidateCountsByProvider(familyIds);
+  if (families.length === 0) throw new Error("No icon families selected");
+  const { candidates, calibrated } = await shardedFanOut(apiKey, title, families, log);
   const candidateCount = families.reduce((sum, f) => sum + f.count, 0);
   const shardCount = Math.ceil(candidateCount / CHOICE_OPTION_CAP);
 
   if (candidates.length === 0) {
     log("No shard produced a confident candidate — falling back to a default icon.");
-    return { icon: DEFAULT_FALLBACK_ICON, confidence: 0, band: "none", alternatives: [], shardCount, candidateCount, families, tieBroken: false };
+    return { icon: DEFAULT_FALLBACK_ICON, confidence: 0, band: "none", alternatives: [], shardCount, candidateCount, families, tieBroken: false, calibrated };
   }
 
   let top = candidates[0];
@@ -223,5 +228,6 @@ export async function matchIcon(apiKey: string, title: string, log: Logger = () 
     candidateCount,
     families,
     tieBroken,
+    calibrated,
   };
 }

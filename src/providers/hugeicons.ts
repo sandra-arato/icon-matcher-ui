@@ -21,6 +21,7 @@ let cached: IconOption[] | null = null;
  */
 export const hugeiconsProvider: IconProvider = {
   id: "hugeicons",
+  label: "Hugeicons",
 
   listIcons() {
     if (!cached) {

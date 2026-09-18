@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { matchIcon } from "../src/matchIcon.js";
+import { parseFamilies } from "../src/providers/index.js";
 
 /**
  * Vercel's Node.js runtime, deployed alongside the static frontend on the same domain — so
@@ -45,9 +46,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { title } = (req.body ?? {}) as { title?: string };
+  const { title, families: rawFamilies } = (req.body ?? {}) as { title?: string; families?: unknown };
   if (!title || typeof title !== "string" || title.length > MAX_TITLE_LENGTH) {
     res.status(400).json({ error: `title is required (max ${MAX_TITLE_LENGTH} characters)` });
+    return;
+  }
+  const families = parseFamilies(rawFamilies);
+  if (!families) {
+    res.status(400).json({ error: "families must be a non-empty list of known icon sets" });
     return;
   }
 
@@ -59,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const log: string[] = [];
-    const result = await matchIcon(apiKey, title, (msg) => log.push(msg));
+    const result = await matchIcon(apiKey, title, (msg) => log.push(msg), families);
     res.status(200).json({ ...result, log });
   } catch (err) {
     console.error("Match request failed:", err instanceof Error ? err.message : err);

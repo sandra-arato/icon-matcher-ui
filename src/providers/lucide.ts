@@ -13,6 +13,7 @@ let cached: IconOption[] | null = null;
 
 export const lucideProvider: IconProvider = {
   id: "lucide",
+  label: "Lucide",
 
   listIcons() {
     if (!cached) {

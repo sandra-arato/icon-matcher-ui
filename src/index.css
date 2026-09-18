@@ -1,16 +1,28 @@
 :root {
   color-scheme: light;
   font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+
+  --ink: #1a1a1a;
+  --ink-2: #555;
+  --ink-3: #8a8a8a;
+  --line: #e4e4e7;
+  --line-strong: #cfcfd4;
+  --surface: #fff;
+  --surface-2: #f7f7f8;
+  --page: #f4f4f5;
+  --danger: #b3261e;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 body {
   margin: 0;
-  background: #f4f4f5;
-  color: #1a1a1a;
+  background: var(--page);
+  color: var(--ink);
 }
 
 code {
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: var(--mono);
   background: #f0f0f0;
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
@@ -18,5 +30,16 @@ code {
 }
 
 a {
-  color: #4a6cf7;
+  color: var(--ink);
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }

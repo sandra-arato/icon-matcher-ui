@@ -12,13 +12,14 @@ export interface MatchResponse extends MatchResult {
 
 /**
  * No API key here — it lives only in the server's environment (TYPESAFE_API_KEY), never in
- * the browser. This just asks the server to run a match for a title.
+ * the browser. This just asks the server to run a match for a title, restricted to the given
+ * icon families (provider ids).
  */
-export async function matchIconViaServer(title: string): Promise<MatchResponse> {
+export async function matchIconViaServer(title: string, families: string[]): Promise<MatchResponse> {
   const res = await fetch(SERVER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, families }),
   });
 
   if (!res.ok) {

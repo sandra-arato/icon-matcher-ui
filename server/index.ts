@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { matchIcon } from "../src/matchIcon";
+import { parseFamilies } from "../src/providers/index.js";
 
 const PORT = Number(process.env.PORT) || 8787;
 
@@ -32,9 +33,14 @@ const server = createServer(async (req, res) => {
 
   try {
     const body = await readJsonBody(req);
-    const { title } = body as { title?: string };
+    const { title, families: rawFamilies } = body as { title?: string; families?: unknown };
     if (!title) {
       res.writeHead(400, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "title is required" }));
+      return;
+    }
+    const families = parseFamilies(rawFamilies);
+    if (!families) {
+      res.writeHead(400, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "families must be a non-empty list of known icon sets" }));
       return;
     }
 
@@ -45,7 +51,7 @@ const server = createServer(async (req, res) => {
     }
 
     const log: string[] = [];
-    const result = await matchIcon(apiKey, title, (msg) => log.push(msg));
+    const result = await matchIcon(apiKey, title, (msg) => log.push(msg), families);
 
     res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ ...result, log }));
   } catch (err) {
