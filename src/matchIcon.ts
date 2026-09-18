@@ -1,5 +1,5 @@
 import { TypeSafeClient, choice } from "@typesafe-ai/sdk";
-import { getAllCandidates, getCandidateCountsByProvider, type QualifiedIcon, type FamilyCount } from "./providers";
+import { getAllCandidates, getCandidateCountsByProvider, type QualifiedIcon, type FamilyCount } from "./providers/index.js";
 
 const CHOICE_OPTION_CAP = 240; // stays under the Choice primitive's hard 255-option-per-question cap
 const NONE_LABEL = "none_of_these";

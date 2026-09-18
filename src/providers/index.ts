@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
-import { hugeiconsProvider } from "./hugeicons";
-import { lucideProvider } from "./lucide";
-import type { IconProvider, RenderOptions } from "./types";
+import { hugeiconsProvider } from "./hugeicons.js";
+import { lucideProvider } from "./lucide.js";
+import type { IconProvider, RenderOptions } from "./types.js";
 
 /** Add a new icon family by implementing IconProvider and listing it here — nothing else changes. */
 export const providers: IconProvider[] = [hugeiconsProvider, lucideProvider];

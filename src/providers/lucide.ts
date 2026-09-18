@@ -1,6 +1,6 @@
 import { createElement, type ComponentType } from "react";
 import * as Lucide from "lucide-react";
-import type { IconOption, IconProvider } from "./types";
+import type { IconOption, IconProvider } from "./types.js";
 
 function humanize(exportName: string): string {
   return exportName

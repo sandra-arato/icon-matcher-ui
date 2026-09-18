@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { matchIcon } from "../src/matchIcon";
+import { matchIcon } from "../src/matchIcon.js";
 
 /**
  * Vercel's Node.js runtime, deployed alongside the static frontend on the same domain — so

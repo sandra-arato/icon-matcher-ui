@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import * as HugeIcons from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
-import type { IconOption, IconProvider } from "./types";
+import type { IconOption, IconProvider } from "./types.js";
 
 function humanize(exportName: string): string {
   return exportName
