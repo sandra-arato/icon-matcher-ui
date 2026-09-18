@@ -22,6 +22,15 @@ export function getAllCandidates(): QualifiedIcon[] {
   );
 }
 
+export interface FamilyCount {
+  id: string;
+  count: number;
+}
+
+export function getCandidateCountsByProvider(): FamilyCount[] {
+  return providers.map((provider) => ({ id: provider.id, count: provider.listIcons().length }));
+}
+
 export function renderQualified(qualifiedName: string, opts: RenderOptions): ReactElement {
   const [providerId, ...rest] = qualifiedName.split(":");
   const name = rest.join(":");

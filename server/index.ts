@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { matchIcon } from "../src/matchIcon";
 
-const PORT = 8787;
+const PORT = Number(process.env.PORT) || 8787;
 
 /**
  * The whole reason this exists: api.typesafe.ai doesn't send CORS headers, so a browser

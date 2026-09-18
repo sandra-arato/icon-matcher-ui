@@ -2,10 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { matchIconViaServer } from "./apiClient";
 import type { MatchResult, Candidate } from "./matchIcon";
-import { renderQualified } from "./providers";
+import { renderQualified, getCandidateCountsByProvider } from "./providers";
 
 const KEY_STORAGE = "icon-matcher:typesafe-api-key";
 const EXAMPLES = ["channels", "brief", "audience", "szállítás", "settings"];
+const FAMILIES = getCandidateCountsByProvider();
+const TOTAL_ICONS = FAMILIES.reduce((sum, f) => sum + f.count, 0);
+
+function splitQualified(qualifiedName: string): { family: string; name: string } {
+  const i = qualifiedName.indexOf(":");
+  return i === -1 ? { family: "?", name: qualifiedName } : { family: qualifiedName.slice(0, i), name: qualifiedName.slice(i + 1) };
+}
 
 function IconPreview({ qualifiedName, size = 72 }: { qualifiedName: string; size?: number }) {
   try {
@@ -15,11 +22,17 @@ function IconPreview({ qualifiedName, size = 72 }: { qualifiedName: string; size
   }
 }
 
+function FamilyTag({ family }: { family: string }) {
+  return <span className={`family-tag family-tag--${family}`}>{family}</span>;
+}
+
 function AltRow({ candidate }: { candidate: Candidate }) {
+  const { family, name } = splitQualified(candidate.icon);
   return (
     <li className="alt-row">
       <IconPreview qualifiedName={candidate.icon} size={28} />
-      <span className="alt-name">{candidate.icon}</span>
+      <FamilyTag family={family} />
+      <span className="alt-name">{name}</span>
       <span className="alt-desc">{candidate.description}</span>
       <span className="alt-confidence">{candidate.confidence.toFixed(2)}</span>
     </li>
@@ -73,7 +86,17 @@ export default function App() {
           <a href="https://docs.typesafe.ai" target="_blank" rel="noreferrer">
             TypeSafe.ai
           </a>
-          's <code>Choice</code> primitive across Hugeicons + Lucide, no keyword search.
+          's <code>Choice</code> primitive, no keyword search.
+        </p>
+        <p className="families-line">
+          Searching {TOTAL_ICONS.toLocaleString()} icons across{" "}
+          {FAMILIES.map((f, i) => (
+            <span key={f.id}>
+              {i > 0 && " + "}
+              <strong>{f.count.toLocaleString()} {f.id}</strong>
+            </span>
+          ))}
+          {" "}— every match considers all of them together, in the same request.
         </p>
       </header>
 
@@ -151,7 +174,9 @@ export default function App() {
           <div className="result-main">
             <IconPreview qualifiedName={result.icon} size={80} />
             <div>
-              <div className="result-name">{result.icon}</div>
+              <div className="result-name">
+                <FamilyTag family={splitQualified(result.icon).family} /> {splitQualified(result.icon).name}
+              </div>
               <div className={`badge badge--${result.band}`}>
                 confidence {result.confidence.toFixed(2)} · {result.band}
                 {result.tieBroken ? " · tie-broken" : ""}
@@ -172,10 +197,17 @@ export default function App() {
 
           {candidateCount && (
             <p className="hint">
-              Every one of the {candidateCount.toLocaleString()} icons across both families got a
-              real Choice judgment in one API call, split into {result.shardCount} parallel
-              questions to stay under the 255-option cap — nothing was pre-filtered by keyword
-              matching.
+              Every one of the {candidateCount.toLocaleString()} icons across{" "}
+              {result.families.map((f, i) => (
+                <span key={f.id}>
+                  {i > 0 && " + "}
+                  {f.count.toLocaleString()} {f.id}
+                </span>
+              ))}{" "}
+              got a real Choice judgment, split into {result.shardCount} shard questions grouped
+              across as few API calls as fit TypeSafe's per-request size limit — nothing was
+              pre-filtered by keyword matching. See the log above for exactly how many calls this
+              particular match took.
             </p>
           )}
         </section>

@@ -14,6 +14,34 @@ header h1 {
   line-height: 1.5;
 }
 
+.families-line {
+  color: #777;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-top: 0.4rem;
+}
+
+.family-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.family-tag--hugeicons {
+  background: #ffe8d6;
+  color: #9a4a12;
+}
+
+.family-tag--lucide {
+  background: #dbeafe;
+  color: #1e4e9c;
+}
+
 .card {
   background: #fff;
   border: 1px solid #e2e2e2;
