@@ -1,9 +1,8 @@
 # icon-matcher-ui
 
-A UI for [icon-matcher](https://github.com/sandra-arato/icon-matcher): paste your
-[TypeSafe.ai](https://typesafe.ai) API key, type a UI section title, and see which icon
-(across Hugeicons + Lucide) the `Choice` primitive picks — live. The whole point is
-transparency: you can see the request go out, the shard count, the confidence score, and
+Type a UI section title, see which icon (across Hugeicons + Lucide) TypeSafe.ai's `Choice`
+primitive picks — live, as a public demo, no API key needed from visitors. The whole point
+is transparency: you can see the request go out, the shard count, the confidence score, and
 the runner-up candidates, not just a final answer.
 
 See the [icon-matcher README](https://github.com/sandra-arato/icon-matcher) for why this
@@ -11,49 +10,57 @@ uses TypeSafe's `Choice` primitive instead of keyword/lexical search, and how th
 fan-out across ~8,800 icons works. This repo puts a UI on top of the same matching logic
 (`src/matchIcon.ts`, `src/providers/`).
 
-## Why there's a local server here
+## Architecture
 
-The original goal was a pure browser app — no backend at all, key never leaves the tab
-except straight to `api.typesafe.ai`. That doesn't work: TypeSafe's API doesn't send CORS
-headers, so the browser's preflight `OPTIONS` request gets rejected before your key is even
-checked (confirmed with both a placeholder key and a real one).
+One key, held server-side only, shared across every visitor:
 
-So `server/index.ts` exists purely to route around that: a ~50-line Node server, no
-framework, that does nothing but forward `POST /api/match` to `api.typesafe.ai` and relay
-the response back. It never logs, stores, or forwards the key anywhere else — read the file,
-that's the entire request path. It's still your machine, your key, your process; the
-browser just can't reach TypeSafe's API directly, so this makes one hop through something
-you control instead of something you don't.
+- **Production** (Vercel): `api/match.ts` is a Node.js serverless function, deployed on the
+  same domain as the static frontend — so the browser's call to `/api/match` is same-origin,
+  no CORS involved at all. The key comes from the `TYPESAFE_API_KEY` environment variable set
+  in the Vercel project, never from the client.
+- **Local dev**: `server/index.ts` is the same idea as a plain Node server (no framework),
+  since the Vite dev server and this server are different ports/origins locally, so it needs
+  its own CORS headers. Reads `TYPESAFE_API_KEY` from a local `.env`.
 
-## Setup
+Both are thin adapters around the same `matchIcon.ts` — the actual matching logic doesn't
+know or care which one called it.
+
+## Abuse protection
+
+Since this runs on a shared key with no visitor auth, `api/match.ts` rate-limits by IP: 100
+requests/hour, plus a length cap on the title. The limiter is an in-memory counter — good
+enough to blunt casual abuse on a low-traffic hobby demo, but it's per function instance, not
+a real distributed store, so it's a soft limit under real load, not a hard guarantee. Vercel's
+own edge network provides baseline DDoS protection independent of this; the in-app limiter is
+specifically about not letting one visitor burn through the whole TypeSafe budget.
+
+## Setup (local dev)
 
 Two processes, both local:
 
 ```bash
 npm install
-npm run server   # terminal 1 — the proxy, on :8787
-npm run dev      # terminal 2 — the UI, on :5173
+cp .env.example .env   # fill in TYPESAFE_API_KEY
+npm run server          # terminal 1 — the proxy, on :8787
+npm run dev              # terminal 2 — the UI, on :5173
 ```
 
-Open the printed UI URL, paste your TypeSafe API key, type a title (or click one of the
-example chips), and hit "Match icon".
+Open the printed UI URL, type a title (or click one of the example chips), and hit "Match
+icon".
 
-## Security model
+## Deploying your own copy
 
-- Your API key is kept only in this browser tab's `sessionStorage`, and is only ever sent to
-  `localhost:8787` (the proxy above) and from there straight to `api.typesafe.ai`.
-- The proxy does no logging, no storage, no analytics — it's a pass-through.
-- Because the key lives in browser memory and gets sent to a local process, this is fine for
-  a key you're comfortable having live in a dev session, not a production secret. Don't
-  deploy `server/index.ts` as-is to a public server — its CORS is wide open, which is only
-  safe because it currently only ever listens on your own machine.
+1. Push this repo to your own GitHub.
+2. Import it into Vercel (auto-detects the Vite frontend + `api/` function, zero config).
+3. In the Vercel project's Environment Variables, add `TYPESAFE_API_KEY` with your own key —
+   set it in the dashboard, not in code or a committed file.
 
 ## What it shows
 
 - The full request: every one of the ~8,800 icons across both families gets a real `Choice`
   judgment. TypeSafe rejects a request as too large well before its documented input-token
-  budget is reached — the actual ceiling isn't published, so the first match after a server
-  restart runs a quick calibration probe (a few sequential calls, halving the size on each
+  budget is reached — the actual ceiling isn't published, so the first match after a cold
+  start runs a quick calibration probe (a few sequential calls, halving the size on each
   rejection) to discover a safe request size, then reuses it for every match after that. If
   the real ceiling turns out to be small, that means *many* small parallel calls per match —
   the "What's happening" panel shows exactly how many, and why.

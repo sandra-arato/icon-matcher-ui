@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 import { matchIconViaServer } from "./apiClient";
 import type { MatchResult, Candidate } from "./matchIcon";
 import { renderQualified, getCandidateCountsByProvider } from "./providers";
 
-const KEY_STORAGE = "icon-matcher:typesafe-api-key";
 const EXAMPLES = ["channels", "brief", "audience", "szállítás", "settings"];
 const FAMILIES = getCandidateCountsByProvider();
 const TOTAL_ICONS = FAMILIES.reduce((sum, f) => sum + f.count, 0);
@@ -40,25 +39,15 @@ function AltRow({ candidate }: { candidate: Candidate }) {
 }
 
 export default function App() {
-  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem(KEY_STORAGE) ?? "");
   const [title, setTitle] = useState("");
   const [result, setResult] = useState<MatchResult | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (apiKey) sessionStorage.setItem(KEY_STORAGE, apiKey);
-    else sessionStorage.removeItem(KEY_STORAGE);
-  }, [apiKey]);
-
   const candidateCount = useMemo(() => result?.candidateCount ?? null, [result]);
 
   async function runMatch(t: string) {
-    if (!apiKey.trim()) {
-      setError("Paste your TypeSafe API key first.");
-      return;
-    }
     if (!t.trim()) return;
 
     setStatus("loading");
@@ -67,7 +56,7 @@ export default function App() {
     setLog([]);
 
     try {
-      const r = await matchIconViaServer(apiKey.trim(), t.trim());
+      const r = await matchIconViaServer(t.trim());
       setResult(r);
       setLog(r.log);
       setStatus("idle");
@@ -96,34 +85,16 @@ export default function App() {
               <strong>{f.count.toLocaleString()} {f.id}</strong>
             </span>
           ))}
-          {" "}— every match considers all of them together, in the same request.
+          {" "}— every match considers all of them together, in the same request. This is a
+          shared public demo (rate-limited per visitor) — see{" "}
+          <a href="https://github.com/sandra-arato/icon-matcher-ui" target="_blank" rel="noreferrer">
+            the source
+          </a>{" "}
+          to run your own copy with your own key.
         </p>
       </header>
 
       <section className="card">
-        <label className="field">
-          <span>TypeSafe API key</span>
-          <input
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="ts_..."
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-        </label>
-        <p className="hint">
-          Stored only in this browser tab's session storage. TypeSafe's API doesn't accept
-          direct browser calls (no CORS headers), so this sends the key to a tiny local proxy
-          on your own machine (<code>server/index.ts</code> — ~50 lines, forwards the request
-          and nothing else) which then calls <code>api.typesafe.ai</code>. Run it with{" "}
-          <code>npm run server</code> alongside <code>npm run dev</code>. See{" "}
-          <a href="https://github.com/sandra-arato/icon-matcher" target="_blank" rel="noreferrer">
-            icon-matcher
-          </a>{" "}
-          for the matching architecture this reuses.
-        </p>
-
         <label className="field">
           <span>UI section title</span>
           <input

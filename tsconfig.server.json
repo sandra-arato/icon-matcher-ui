@@ -9,5 +9,5 @@
     "strict": true,
     "noEmit": true
   },
-  "include": ["server", "src/matchIcon.ts", "src/providers"]
+  "include": ["server", "api", "src/matchIcon.ts", "src/providers"]
 }

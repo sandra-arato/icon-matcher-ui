@@ -7,9 +7,9 @@ const PORT = Number(process.env.PORT) || 8787;
  * The whole reason this exists: api.typesafe.ai doesn't send CORS headers, so a browser
  * can't call it directly (confirmed — the preflight OPTIONS request gets no
  * Access-Control-Allow-Origin header at all). This server does nothing except forward the
- * request server-side, where CORS doesn't apply, and relay the result back. It never logs,
- * stores, or forwards the API key anywhere except straight to api.typesafe.ai — read the
- * handler below, that's the entire request path.
+ * request server-side, where CORS doesn't apply, and relay the result back. Mirrors
+ * api/match.ts (the deployed Vercel version): the key comes from TYPESAFE_API_KEY in your
+ * local .env, not from the client — same model as production, just a different host.
  *
  * Local-dev only: CORS here is wide open (reflects any origin) since this only ever runs on
  * your own machine for your own browser tab. Don't deploy this as-is to a public server.
@@ -32,9 +32,15 @@ const server = createServer(async (req, res) => {
 
   try {
     const body = await readJsonBody(req);
-    const { apiKey, title } = body as { apiKey?: string; title?: string };
-    if (!apiKey || !title) {
-      res.writeHead(400, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "apiKey and title are required" }));
+    const { title } = body as { title?: string };
+    if (!title) {
+      res.writeHead(400, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "title is required" }));
+      return;
+    }
+
+    const apiKey = process.env.TYPESAFE_API_KEY;
+    if (!apiKey) {
+      res.writeHead(500, { "Content-Type": "application/json" }).end(JSON.stringify({ error: "Missing TYPESAFE_API_KEY — copy .env.example to .env and fill it in" }));
       return;
     }
 
@@ -67,5 +73,5 @@ function readJsonBody(req: import("node:http").IncomingMessage): Promise<unknown
 
 server.listen(PORT, () => {
   console.log(`icon-matcher proxy listening on http://localhost:${PORT}`);
-  console.log("Forwards POST /api/match { apiKey, title } to api.typesafe.ai and nowhere else.");
+  console.log("Forwards POST /api/match { title } to api.typesafe.ai using TYPESAFE_API_KEY from .env.");
 });
