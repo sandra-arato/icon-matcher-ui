@@ -51,8 +51,12 @@ example chips), and hit "Match icon".
 ## What it shows
 
 - The full request: every one of the ~8,800 icons across both families gets a real `Choice`
-  judgment in one API call, split into ~37 parallel shard questions to stay under the
-  255-option cap — the "What's happening" panel shows this once a match completes.
+  judgment. TypeSafe rejects a request as too large well before its documented input-token
+  budget is reached — the actual ceiling isn't published, so the first match after a server
+  restart runs a quick calibration probe (a few sequential calls, halving the size on each
+  rejection) to discover a safe request size, then reuses it for every match after that. If
+  the real ceiling turns out to be small, that means *many* small parallel calls per match —
+  the "What's happening" panel shows exactly how many, and why.
 - The winning icon, rendered live, with its confidence score and band (high/medium/none).
 - The runner-up candidates when confidence is only medium, so you can see what the model
   was weighing.
