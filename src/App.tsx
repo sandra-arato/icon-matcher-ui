@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
-import { matchIcon, type MatchResult, type Candidate } from "./matchIcon";
+import { matchIconViaServer } from "./apiClient";
+import type { MatchResult, Candidate } from "./matchIcon";
 import { renderQualified } from "./providers";
 
 const KEY_STORAGE = "icon-matcher:typesafe-api-key";
@@ -53,8 +54,9 @@ export default function App() {
     setLog([]);
 
     try {
-      const r = await matchIcon(apiKey.trim(), t.trim(), (msg) => setLog((prev) => [...prev, msg]));
+      const r = await matchIconViaServer(apiKey.trim(), t.trim());
       setResult(r);
+      setLog(r.log);
       setStatus("idle");
     } catch (err) {
       setStatus("error");
@@ -88,9 +90,11 @@ export default function App() {
           />
         </label>
         <p className="hint">
-          Stored only in this browser tab's session storage. Requests go straight from your
-          browser to <code>api.typesafe.ai</code> — this key is never sent anywhere else, and
-          this page has no backend of its own. See{" "}
+          Stored only in this browser tab's session storage. TypeSafe's API doesn't accept
+          direct browser calls (no CORS headers), so this sends the key to a tiny local proxy
+          on your own machine (<code>server/index.ts</code> — ~50 lines, forwards the request
+          and nothing else) which then calls <code>api.typesafe.ai</code>. Run it with{" "}
+          <code>npm run server</code> alongside <code>npm run dev</code>. See{" "}
           <a href="https://github.com/sandra-arato/icon-matcher" target="_blank" rel="noreferrer">
             icon-matcher
           </a>{" "}

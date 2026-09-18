@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
-  "description": "Browser-only UI for icon-matcher: paste a TypeSafe.ai API key and match a UI section title to an icon (Hugeicons + Lucide) live, no backend.",
+  "description": "UI for icon-matcher: paste a TypeSafe.ai API key and match a UI section title to an icon (Hugeicons + Lucide) live, via a tiny local proxy.",
   "scripts": {
     "dev": "vite",
+    "server": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -25,6 +26,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "tsx": "^4.19.2",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }

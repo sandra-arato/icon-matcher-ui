@@ -1,57 +1,58 @@
 # icon-matcher-ui
 
-A browser-only UI for [icon-matcher](https://github.com/sandra-arato/icon-matcher): paste
-your [TypeSafe.ai](https://typesafe.ai) API key, type a UI section title, and see which
-icon (across Hugeicons + Lucide) the `Choice` primitive picks — live, with no backend at
-all. The whole point is transparency: you can see the request go out, the shard count, the
-confidence score, and the runner-up candidates, not just a final answer.
+A UI for [icon-matcher](https://github.com/sandra-arato/icon-matcher): paste your
+[TypeSafe.ai](https://typesafe.ai) API key, type a UI section title, and see which icon
+(across Hugeicons + Lucide) the `Choice` primitive picks — live. The whole point is
+transparency: you can see the request go out, the shard count, the confidence score, and
+the runner-up candidates, not just a final answer.
 
 See the [icon-matcher README](https://github.com/sandra-arato/icon-matcher) for why this
 uses TypeSafe's `Choice` primitive instead of keyword/lexical search, and how the sharded
-fan-out across ~8,800 icons works. This repo just puts a UI on top of the same logic
-(`src/matchIcon.ts`, `src/providers/`), adapted to run entirely client-side.
+fan-out across ~8,800 icons works. This repo puts a UI on top of the same matching logic
+(`src/matchIcon.ts`, `src/providers/`).
 
-## ⚠️ Known open issue: CORS
+## Why there's a local server here
 
-TypeSafe's SDK has a `dangerouslyAllowBrowser: true` flag specifically for calling their
-API straight from a browser — but in testing (with a placeholder key, from `localhost`),
-the preflight `OPTIONS https://api.typesafe.ai/v1/systemone` request came back `400`
-instead of the `200`/`204` a working CORS preflight needs. That happens before your API key
-is even checked, so a fake key isn't the cause.
+The original goal was a pure browser app — no backend at all, key never leaves the tab
+except straight to `api.typesafe.ai`. That doesn't work: TypeSafe's API doesn't send CORS
+headers, so the browser's preflight `OPTIONS` request gets rejected before your key is even
+checked (confirmed with both a placeholder key and a real one).
 
-**This needs verifying with a real key before relying on it.** If your account/project
-needs its allowed origins configured somewhere in TypeSafe's dashboard (common for APIs
-that support browser calls), do that first. If the same `400` happens with a real key, this
-UI's "call the API directly from the browser" approach won't work as-is, and the calls
-would need to go through a minimal same-origin proxy instead (the key still wouldn't touch
-any database — it'd just relay through a server you control instead of going straight from
-the page). That fallback isn't built yet, pending this being confirmed one way or the other.
+So `server/index.ts` exists purely to route around that: a ~50-line Node server, no
+framework, that does nothing but forward `POST /api/match` to `api.typesafe.ai` and relay
+the response back. It never logs, stores, or forwards the key anywhere else — read the file,
+that's the entire request path. It's still your machine, your key, your process; the
+browser just can't reach TypeSafe's API directly, so this makes one hop through something
+you control instead of something you don't.
 
 ## Setup
 
+Two processes, both local:
+
 ```bash
 npm install
-npm run dev
+npm run server   # terminal 1 — the proxy, on :8787
+npm run dev      # terminal 2 — the UI, on :5173
 ```
 
-Open the printed local URL, paste your TypeSafe API key, type a title (or click one of the
+Open the printed UI URL, paste your TypeSafe API key, type a title (or click one of the
 example chips), and hit "Match icon".
 
 ## Security model
 
-- Your API key is kept only in this browser tab's `sessionStorage` — it's never sent
-  anywhere except directly to `api.typesafe.ai`.
-- There is no backend, no logging, no analytics. Closing the tab clears the key.
-- Because the key lives in browser memory, anyone with access to that browser tab (devtools,
-  a malicious extension, etc.) could read it — that's the tradeoff `dangerouslyAllowBrowser`
-  is warning about. Use a key you're comfortable having live in a browser session, not a
-  production secret.
+- Your API key is kept only in this browser tab's `sessionStorage`, and is only ever sent to
+  `localhost:8787` (the proxy above) and from there straight to `api.typesafe.ai`.
+- The proxy does no logging, no storage, no analytics — it's a pass-through.
+- Because the key lives in browser memory and gets sent to a local process, this is fine for
+  a key you're comfortable having live in a dev session, not a production secret. Don't
+  deploy `server/index.ts` as-is to a public server — its CORS is wide open, which is only
+  safe because it currently only ever listens on your own machine.
 
 ## What it shows
 
 - The full request: every one of the ~8,800 icons across both families gets a real `Choice`
   judgment in one API call, split into ~37 parallel shard questions to stay under the
-  255-option cap — the "What's happening" panel shows this as it runs.
+  255-option cap — the "What's happening" panel shows this once a match completes.
 - The winning icon, rendered live, with its confidence score and band (high/medium/none).
 - The runner-up candidates when confidence is only medium, so you can see what the model
   was weighing.
